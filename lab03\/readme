@@ -1,0 +1,129 @@
+# 🔬 Lab 03 — Edge Detection Techniques and Their Impact on Classification Performance
+
+**HAM10000 Skin-Lesion Dataset** · Sobel · Prewitt · Laplacian · LoG · Canny · SVM · Random Forest · KNN · EfficientNet-B3 · ResNet-50
+
+**Author:** Abdul Rehman (FA23-BAI-036) · Team *Quantum Coders*
+**Program:** BS Artificial Intelligence — COMSATS University Islamabad, Wah Campus
+
+---
+
+## 📌 Overview
+
+This lab studies classical **edge detection** and asks whether edge maps are a useful input for **skin-lesion classification**. It continues Lab 01 (raw images) and Lab 02 (image filtering) on the same dataset and classes.
+
+The notebook covers six tasks:
+
+1. Implements first-order (Sobel Gx / Gy / magnitude, Prewitt), second-order (Laplacian, LoG) and multi-stage (Canny) edge detectors.
+2. Measures how **Gaussian** and **salt-and-pepper** noise affect each detector, and how **Gaussian / Median** filtering helps.
+3. Tunes Canny's **low/high thresholds** and **Gaussian kernel size**, and selects the most useful configuration.
+4. Builds three versions of the dataset (Raw, Filtered, Edge) with identical train/val/test splits.
+5. Trains and compares **5 classifiers** on all three versions.
+6. Visualises the best model with confusion matrices and metric charts.
+
+## 📂 Folder Contents
+
+| File / Folder | Description |
+|---|---|
+| `Lab03_Edge_Detection_Classification.ipynb` | Complete code: loading, noise, filtering, edge detection, dataset preparation, training and evaluation |
+| `Lab03_Report.md` | Full report: Introduction, Methodology, Setup, Results, Discussion Q1–Q7, viva answers, Conclusion, References |
+| `plots/` | All figures used in the report |
+| `table1_noise_preprocessing.csv` | Table 1 — Effect of noise & preprocessing on edge detection |
+| `table2_canny_parameters.csv` | Table 2 — Canny parameter analysis |
+| `table3_cross_lab.csv` | Table 3 — Cross-lab classification performance |
+| `summary.json` | Key choices and results of the run (best filter, best Canny config, best model) |
+
+## 🧪 Lab Tasks
+
+| Task | What is done | Output |
+|---|---|---|
+| **1** Comparative edge detection | Original → Sobel → Prewitt → Laplacian → LoG → Canny on all 7 classes | `task1_*.png` |
+| **2** Effect of noise | Gaussian (σ = 20) and salt-and-pepper (5 %) noise; Gaussian 5×5 and Median 5×5 filtering; quantitative edge-quality metrics | Table 1, `task2_*.png` |
+| **3** Canny parameters | 7 configurations (30/100, 50/150, 100/200; kernels 3×3, 5×5, 7×7), automatic selection | Table 2, `task3_*.png` |
+| **4** Dataset versions | **Set A** Raw · **Set B** Sharpening (best Lab 02 filter) · **Set C** best Canny edges | `task4_three_sets.png` |
+| **5** Classification | SVM, Random Forest, KNN, EfficientNet-B3, ResNet-50 on all three sets | Table 3, `task5_cnn_curves.png` |
+| **6** Visual comparison | Confusion matrices (Raw / Filtered / Edge) + Accuracy / Precision / Recall / F1 bar charts | `task6_*.png` |
+
+## 📏 How Edge Quality Is Measured
+
+The edge maps are compared numerically, not only by eye:
+
+- **Thresholding:** each detector's threshold is fixed on the **clean** image, and the same threshold is applied to the noisy and filtered versions.
+- **False-edge %:** edges that do not exist in the clean edge map. This measures **noise sensitivity**.
+- **Missed-edge %:** clean edges that were lost. This measures **broken edges**.
+- **F1 vs clean:** overall edge quality.
+- **Continuity:** mean length of connected edge segments. **Fragments:** number of segments.
+
+## ⚙️ Design Highlights
+
+- **Download once:** the dataset and the ImageNet weights are downloaded once, before any training. Every experiment reuses the in-memory weights.
+- **Preprocess once:** the filters and the edge detector are applied to every image once. The results are cached in RAM and on disk (`lab03_cache/`), so training never re-reads or re-filters images.
+- **Fair comparison:** the same splits, epochs, optimiser and metrics are used for Raw, Filtered and Edge.
+- **Single imbalance correction:** √inverse-frequency class weights, which avoids collapsing onto the minority classes.
+- **Accurate timing:** a GPU warm-up pass runs before inference time is measured.
+- **`REUSE_LAB02` switch:** loads saved Lab 02 checkpoints instead of retraining them.
+- **Auto-generated report:** the notebook fills `Lab03_Report.md` with the real tables and numbers of the run.
+
+## 🚀 How to Run
+
+1. Open the notebook in **Google Colab**.
+2. Select a GPU: **Runtime → Change runtime type → T4 GPU**.
+3. Click **Runtime → Run all**.
+   - The dataset is downloaded automatically via `kagglehub`. No manual download is needed.
+   - A full run takes about **45–60 minutes** on a T4.
+4. At the end, `Lab03_Results.zip` (report, tables and plots) is downloaded automatically.
+
+**Optional — reuse your Lab 02 models:** put `efficientnet_b3_none.pt` and `efficientnet_b3_sharpening.pt` in a `models/` folder, or on Google Drive with `MOUNT_DRIVE = True`, before running Section 12.
+
+### Main settings (Section 2 and Section 12)
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `BEST_FILTER` | `"sharpening"` | Lab 02 filter used for Set B |
+| `EPOCHS` | `10` | CNN epochs (same for all sets) |
+| `CNN_SIZE` | `160` | CNN input resolution |
+| `GAUSS_SIGMA`, `SP_AMOUNT` | `20`, `0.05` | Noise levels for Task 2 |
+| `IMBALANCE_FIX` | `"weighted_loss"` | Class-imbalance handling |
+| `REUSE_LAB02` | `True` | Reuse Lab 02 checkpoints if found |
+
+## 📊 Dataset
+
+- **HAM10000**, via Kaggle: [`surajghuwalewala/ham1000-segmentation-and-classification`](https://www.kaggle.com/datasets/surajghuwalewala/ham1000-segmentation-and-classification)
+- **10,015** dermoscopic images in 7 classes: `akiec`, `bcc`, `bkl`, `df`, `mel`, `nv`, `vasc`
+- **Split:** Lab 02's stratified 80/20 split (`seed = 42`). The 20 % part is used as the test set, and 10 % of the training part is held out for validation.
+
+## 📈 Results
+
+All results (Tables 1–3, the best model, figures and answers to the discussion questions) are in **[`Lab03_Report.md`](Lab03_Report.md)**.
+
+## 🛠️ Requirements
+
+```
+python >= 3.10
+torch, torchvision
+opencv-python-headless
+scikit-learn
+numpy, pandas
+matplotlib, seaborn
+tqdm
+kagglehub
+```
+
+In Colab, the first cell installs everything:
+
+```bash
+pip install -q kagglehub torch torchvision scikit-learn matplotlib seaborn pandas tqdm opencv-python-headless
+```
+
+## 🔗 Related Labs
+
+- **Lab 01:** transfer-learning model comparison on raw images
+- **Lab 02:** effect of image filtering (Average, Gaussian, Median, Sharpening, Sobel) on classification
+- **Lab 03:** edge detection and edge-based classification *(this folder)*
+
+## 📚 References
+
+1. Tschandl P. et al., *The HAM10000 dataset*, Scientific Data, 2018.
+2. Canny J., *A Computational Approach to Edge Detection*, IEEE TPAMI, 1986.
+3. Marr D., Hildreth E., *Theory of Edge Detection*, Proc. R. Soc. Lond. B, 1980.
+4. Gonzalez R. C., Woods R. E., *Digital Image Processing*, 4th ed., Pearson, 2018.
+5. Tan M., Le Q., *EfficientNet*, ICML, 2019 · He K. et al., *Deep Residual Learning*, CVPR, 2016.
